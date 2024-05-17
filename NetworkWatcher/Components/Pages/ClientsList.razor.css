@@ -1,0 +1,32 @@
+﻿.table{
+    font-size: 14px
+}
+
+.p{
+    font-size: 12px
+}
+
+.w12{
+    width: 15%
+}
+
+.btn{
+    vertical-align: text-bottom
+}
+
+
+
+
+/*.online {
+    color: forestgreen
+}
+
+.offline {
+    color: lightgray;
+    opacity: 0.7
+}*/
+
+/*.bottom {
+    position: absolute;
+    bottom: 0
+}*/

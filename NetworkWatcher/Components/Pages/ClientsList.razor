@@ -1,0 +1,243 @@
+﻿@* <h3>ClientsList</h3> *@
+@rendermode RenderMode.InteractiveServer
+@using NetworkWatcher.Services
+@using NetworkWatcher.Models
+@using NetworkWatcher.DbContexts
+@using Microsoft.AspNetCore.SignalR;
+@* @using Microsoft.AspNetCore.SignalR.Client; *@
+@using Serilog;
+
+@inject NavigationManager navigationManager
+@inject INetworkWatcherRepository repositoryService
+@inject IJSRuntime jsRuntime
+@inject IHubContext<ServiceHub> serviceHub
+
+
+@* <NavLink class="nav-link" href="#">
+    <span class="oi oi-plus">Add Device</span>
+</NavLink> *@
+
+<h2>Clients</h2>
+@if (ServiceHub.clients is null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    
+    @* <h4 @bind-value="@currentDevice"></h4> *@
+
+    <table class="table" id="tableOne">
+        <thead>
+            <tr>
+                <th>DeviceID</th>
+                <th>RemoteID</th>
+                <th class="w12">ConnectionID</th>
+              @*<th>IP</th> *@
+                <th>Name</th>
+                <th>Last Connection</th>
+                <th>SSID</th>
+                <th>Signal</th>
+                <th>24 hours</th>
+                <th>Online</th>
+                <th>ServerLogs</th>
+                <th>ClientLogs</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (ServiceHub.clients != null){
+                @foreach (var cl in ServiceHub.clients)
+                {
+
+                    <tr>
+                        <td>@cl.DeviceId</td>
+                        <td>@cl.RemoteId</td>
+                        <td>@cl.ConnectionId</td>
+                        @*<td>@cl.IPAddress</td> *@
+                        <td>@cl.Name</td>
+                        <td>@cl.LastConnectionDateTime</td>
+                        <td>@cl.WifiSsid</td>
+                        <td>@cl.WifiSignalStrength</td>
+                        <td>
+                            <History deviceId="@cl.DeviceId" dbServerLogs="dbServerLogs24" />
+                        </td>
+
+                        <td>
+                            <Led IsOnline=Common.onlineClientsIds.Contains(cl.ConnectionId) />
+                        </td>
+
+                        <td>
+                            <NavLink class="" @onclick="() => NewTabServerLog(cl.DeviceId)">
+                                >>
+                            </NavLink>
+                        </td>
+
+                        <td>
+                            <NavLink class="" @onclick="() => NewTabClientLog(cl.DeviceId)">
+                                >>
+                            </NavLink>
+                        </td>
+                    </tr>
+
+                   
+                }
+            }
+            
+        </tbody>
+    </table>
+
+    <div class="bg-light bg-opacity-10">
+        <p></p>
+        <p>Current connections:</p>
+        <div>
+            @foreach (string id in Common.onlineClientsIds)
+            {
+                <p>@id</p>
+            }
+        </div>
+
+    </div>
+
+
+@*     <button @onclick="e => this.Collapsed = !this.Collapsed" class="btn">
+        @(this.Collapsed ? "+" : "-")
+    </button>
+    <Panel Collapse="@( this.Collapsed ? "collapse": "")" LogItems="testLogs"></Panel> *@
+
+}
+
+@code {
+    //private HubConnection? hubConnection;
+    const int PING_PERIOD = 2000;   //milliseconds
+    const int REFRESH_PERIOD = PING_PERIOD * 6; //milliseconds
+    private List<Client>? dbClients;
+    private List<LogItem>? dbServerLogs24;
+    public static int ticksNum = 0;
+    //private bool Collapsed = true;
+    private int numberOfTries = 0;
+    private bool ledState = false;
+    
+    protected override async Task OnInitializedAsync()
+    {
+
+        dbClients = await Task.Run(() => repositoryService.GetAllClients());
+        ServiceHub.instantLogItems = await Task.Run(() => repositoryService.GetAllLogItems());
+
+        foreach (Client dbClient in dbClients)
+        {
+            if (!ServiceHub.clients.Select(c => c.DeviceId).Contains(dbClient.DeviceId))
+            {
+                ServiceHub.clients.Add(dbClient);
+            }
+        }
+
+        //StateHasChanged();
+
+        var timer = new Timer(new TimerCallback(_ =>
+        {
+            InvokeAsync(async () =>
+            {
+                PingHubClients();
+                // if (ticksNum > 120)
+                // {
+                //     ticksNum = 0;
+                // }
+                // ticksNum++;
+                await Task.Delay(PING_PERIOD / 2);
+                StateHasChanged();
+            });
+        }), null, 0, PING_PERIOD);
+
+        var timer2 = new Timer(new TimerCallback(_ =>
+        {
+            InvokeAsync(async () =>
+            {
+                await RefreshList();
+            });
+
+        }), null, PING_PERIOD, REFRESH_PERIOD);
+
+        var timer3 = new Timer(new TimerCallback(_ =>
+        {
+            dbServerLogs24 = ServiceHub.instantLogItems.Where(li => li.DateTime > (DateTimeOffset.Now.Subtract(TimeSpan.FromHours(26)))).ToList();
+        }), null, 0, 30000);
+    }
+
+
+    private void CheckIfOnline()
+    {
+
+    }
+
+    public enum OnlineState {
+        Online,
+        Offline
+    }
+
+    private async void NewTabServerLog(string deviceId)
+    {
+        await jsRuntime.InvokeAsync<object>("blazorOpen", new object[2] { "/logs/" + deviceId, "_blank" });
+    }
+
+    private async void NewTabClientLog(string deviceId)
+    {
+        await jsRuntime.InvokeAsync<object>("blazorOpen", new object[2] { "/outerLogs/" + deviceId, "_blank" });
+    }
+
+
+
+    //
+    private void PingHubClients()
+    {
+        //ticksNum++;
+        serviceHub.Clients.All.SendAsync("PingClient");
+    }
+
+
+    private async Task RefreshList()
+    {
+        //Thread.Sleep(REFRESH_PERIOD * 2);
+        //await Task.Delay(REFRESH_PERIOD);
+        Common.onlineClientsIds.Clear();
+    }
+
+
+    private void AddTimeoutLog(string connectionId)
+    {
+        Client? client = repositoryService.GetAllClients().Result.FirstOrDefault(c => c.ConnectionId == connectionId);
+        if (client != null)
+        {
+            LogItem logItem = new LogItem()
+                {
+                    DateTime = DateTimeOffset.Now,
+                    DeviceId = client.DeviceId,
+                    ConnectionId = connectionId,
+                    EventType = EventType.Timeout,
+                    WifiSsid = client.WifiSsid,
+                    WifiSignalStrength = client.WifiSignalStrength,
+                    Message = string.Empty
+                };
+            repositoryService.AddLogItem(logItem);
+            ServiceHub.instantLogItems.Add(logItem);
+
+            Log.Information($"Client: {client.Name}, DeviceId: {client.DeviceId}, ConnectionId: {connectionId} is Lost");
+        }
+        else
+        {
+            LogItem logItem = new LogItem()
+                {
+                    DateTime = DateTimeOffset.Now,
+                    DeviceId = "-",
+                    ConnectionId = connectionId,
+                    EventType = EventType.Timeout,
+                    WifiSsid = "-",
+                    WifiSignalStrength = -1000,
+                    Message = string.Empty
+                };
+            repositoryService.AddLogItem(logItem);
+            ServiceHub.instantLogItems.Add(logItem);
+
+            Log.Information($"Unknown client - ConnectionId: {connectionId} is Lost");
+        }
+    }
+}

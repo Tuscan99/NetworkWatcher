@@ -1,0 +1,47 @@
+﻿<div class="align-content-center rounded-circle @colour"></div>
+@* <p>@lastcolour</p> *@
+
+
+@code {
+
+    [Parameter]
+    public bool IsOnline { get; set; }
+
+    //public bool HasOnline { get; set; } = false;
+
+    // //-------------
+    // [Parameter]
+    // public string ConnectionId { get; set; }
+    // bool IsOnline = false;
+    //int ticksNum = 0;
+
+    //------------
+
+    string colour = "ledgray";
+    // string lastcolour = "ledgray";
+    // bool isOnlineInner = false;
+    // public static int i = 0;
+
+
+    //string text = "OFFLINE";
+    // public enum ColourClass {
+    //     ledgray,
+    //     ledgreen
+    // }
+
+    protected override async Task OnParametersSetAsync()
+    {
+
+        if (IsOnline)
+        {
+            //text = "ONLINE";
+            colour = "ledgreen";
+        }
+        else
+        {
+            colour = "ledgray";
+        }
+    }
+
+
+}

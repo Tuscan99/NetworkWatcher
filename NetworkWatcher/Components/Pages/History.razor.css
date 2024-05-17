@@ -1,0 +1,26 @@
+﻿body {
+}
+
+.ind-green {
+    background-color: rgba(34, 139, 34, 0.2)
+}
+
+.ind-yellow {
+    background-color: rgba(255, 255, 0, 0.2)
+}
+
+.ind-orange {
+    background-color: rgba(186, 164, 0, 0.2)
+}
+
+.ind-red {
+    background-color: rgba(255, 0, 0, 0.2)
+}
+
+.ind-emp {
+    background-color: rgb(128, 128, 128)
+}
+
+.small-letters {
+    font-size: 6px
+}

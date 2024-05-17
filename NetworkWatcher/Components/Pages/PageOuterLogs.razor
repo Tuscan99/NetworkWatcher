@@ -1,0 +1,75 @@
+﻿@page "/outerLogs/{deviceId}"
+
+@using NetworkWatcher.Models;
+@using NetworkWatcher.Services;
+
+@inject INetworkWatcherRepository repositoryService
+@{
+    IEnumerable<OuterLogItem>? outerLogItems = repositoryService.GetAllOuterLogItems().Result.Where(i => i.DeviceId == deviceId);
+    string? title = string.Empty;
+    if (outerLogItems != null && outerLogItems.Count() > 0)
+    {
+        title = outerLogItems?.FirstOrDefault().DeviceId + " - client side offline logs";
+    }
+    else
+    {
+        title = "Not Found";
+    }
+}
+
+<PageTitle>
+    @title
+</PageTitle>
+
+
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <p class="panel-title">Connections</p>
+    </div>
+
+    <div class="panel-body">
+        <div class="container-fluid">
+            <div class="row">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Datetime</th>
+                            <th>DeviceID</th>
+                            <th>ConnectionID</th>
+                            <th>EventType</th>
+                            <th>SSID</th>
+                            <th>Signal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (OuterLogItem log in outerLogItems)
+                        {
+                            <tr>
+                                <td>@log.Id</td>
+                                <td>@log.ConnectDate</td>
+                                <td>@log.DeviceId</td>
+                                <td>-</td>
+                                <td>@log.StatusRaw</td>
+                                <td>@log.WifiSsid</td>
+                                <td>@log.WifiSignalStrength</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    //public List<LogItem> LogItems { get; set; }
+    public string deviceId { get; set; }
+
+    //List<LogItem> logItems = repositoryService
+
+}

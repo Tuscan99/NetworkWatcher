@@ -1,0 +1,106 @@
+﻿@page "/logs/{deviceId}"
+
+@* @using Microsoft.AspNetCore.Components.Web.Extensions.Head; *@
+@using NetworkWatcher.Models;
+@using NetworkWatcher.Services;
+@using Microsoft.AspNetCore.Components.Web
+@rendermode RenderMode.InteractiveServer
+
+@inject INetworkWatcherRepository repositoryService
+
+
+<PageTitle>@title</PageTitle>
+
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <p class="panel-title">
+            <h3>Connections</h3>
+        </p>
+    </div>
+
+@*     <div>
+        <p>@buttonText</p>
+    </div> *@
+
+    <div class="panel-body">
+        <div class="container-fluid">
+            <div class="row">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>
+                                <a class="btn-link ptr" @onclick="SortByDate"><b>Datetime</b> ▲▼</a>
+                            </th>
+                            <th>DeviceID</th>
+                            <th>ConnectionID</th>
+                            <th>EventType</th>
+                            <th>SSID</th>
+                            <th>Signal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (LogItem log in logItems)
+                        {
+                            <tr>
+                                <td>@log.Id</td>
+                                <td>@log.DateTime</td>
+                                <td>@log.DeviceId</td>
+                                <td>@log.ConnectionId</td>
+                                <td>@log.EventType.Value</td>
+                                <td>@log.WifiSsid</td>
+                                <td>@log.WifiSignalStrength</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public string deviceId { get; set; }
+
+    string? title = string.Empty;
+    List<LogItem> logItems = new List<LogItem>();
+    bool isOrderByDescending = false;
+    //string buttonText = string.Empty;
+    string buttonText = "None";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (logItems != null && logItems.Count() > 0)
+        {
+            title = logItems.FirstOrDefault().DeviceId + " - server side offline logs";
+        }
+        else
+        {
+            title = "Not Found";
+        }
+        logItems = repositoryService.GetAllLogItems().Result.Where(i => i.DeviceId == deviceId).OrderBy(l => l.DateTime).ToList();
+    }
+
+
+    private async void SortByDate()
+    {
+        if (isOrderByDescending)
+        {
+            logItems = repositoryService.GetAllLogItems().Result.Where(i => i.DeviceId == deviceId).OrderByDescending(l => l.DateTime).ToList();
+            isOrderByDescending = false;
+            buttonText = "By Ascending";
+            StateHasChanged();
+        }
+        else
+        {
+            logItems = repositoryService.GetAllLogItems().Result.Where(i => i.DeviceId == deviceId).OrderBy(l => l.DateTime).ToList();
+            isOrderByDescending = true;
+            buttonText = "By Descending";
+            StateHasChanged();
+        }
+        
+    }
+}

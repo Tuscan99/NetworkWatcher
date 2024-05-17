@@ -1,0 +1,100 @@
+﻿@using NetworkWatcher.Models;
+@using NetworkWatcher.Services;
+
+@inject INetworkWatcherRepository repositoryService
+
+@* @{
+    IEnumerable<LogItem>? logItems = repositoryService.GetAllLogItems().Result.Where(i => i.DeviceId == deviceId);
+} *@
+
+
+
+<div class="h-100">
+@*     <div class="h-8 font-monospace">
+        <span class="small_letters">aaa</span>
+    </div> *@
+@*     <div class="h-25">
+        @for (int i = 0; i < 24; i = i + 2)
+        {
+            @if (i <= 7)
+            {
+                <div class=@classNum style="width: 12px; margin-left: 1px">0@(i + 2)</div>
+            }
+            else
+            {
+                <div class=@classNum style="width: 12px; margin-left: 1px">@(i + 2)</div>
+            }
+        }
+    </div> *@
+    <div>
+        @for (int i = 0; i < 12; i++)
+        {
+            if (eventsArray[i] < 0) //maybetodo
+            {
+                <div class="d-inline-block" style="width: 8px; margin-left: 1px; background-color:whitesmoke">&nbsp;</div>
+            }
+            else if (eventsArray[i] >= 0 && eventsArray[i] <= 2)
+            {
+                <div class="d-inline-block ind-green" style="width: 8px; margin-left: 1px">&nbsp;</div>
+            }
+            else if (eventsArray[i] > 2 && eventsArray[i] <= 8)
+            {
+                <div class="d-inline-block ind-yellow" style="width: 8px; margin-left: 1px">&nbsp;</div>
+            }
+            else if (eventsArray[i] > 8 && eventsArray[i] <= 16)
+            {
+                <div class="d-inline-block ind-orange" style="width: 8px; margin-left: 1px">&nbsp;</div>
+            }
+            else if (eventsArray[i] > 16)
+            {
+                <div class="d-inline-block ind-red" style="width: 8px; margin-left: 1px">&nbsp;</div>
+            }
+            else
+            {
+                <div class="d-inline-block" style="width: 8px; margin-left: 1px; background-color:whitesmoke">&nbsp;</div>
+            }
+        }
+
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string deviceId { get; set; }
+
+    [Parameter]
+    public List<LogItem>? dbServerLogs { get; set; }
+
+
+    int[] eventsArray = new int[12];
+    //private List<LogItem>? dbServerLogs = new List<LogItem>();
+    private List<LogItem> currentLogs = new List<LogItem>();
+
+    protected override async Task OnInitializedAsync()
+    {
+
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (dbServerLogs != null)
+        {
+            currentLogs = dbServerLogs.Where(
+                l => l.DeviceId == deviceId
+                && l.DateTime >= (DateTimeOffset.Now - TimeSpan.FromHours(24))).ToList();
+        }
+
+        for (int j = 0; j < 12; j++)
+        {
+            TimeSpan tsp1 = TimeSpan.FromHours((j + 1) * 2);
+
+            DateTimeOffset dto1 = DateTimeOffset.Now.Subtract(tsp1);
+            DateTimeOffset dto2 = dto1.AddHours(2);
+
+            int disconnectsNumber = currentLogs.Where(lp => (lp.EventType == EventType.Disconnection || lp.EventType == EventType.Timeout)
+                && lp.DateTime >= dto1 && lp.DateTime < dto2).Count();
+            eventsArray[j] = disconnectsNumber;
+        }
+    }
+
+}

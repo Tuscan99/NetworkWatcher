@@ -1,0 +1,26 @@
+﻿body {
+}
+
+.ledgreen {
+    width: 16px;
+    height: 16px;
+    background-color:chartreuse;
+}
+
+.ledgray {
+    width: 16px;
+    height: 16px;
+    background-color: rgb(232, 236, 232);
+}
+
+.ledorange {
+    width: 16px;
+    height: 16px;
+    background-color: orange;
+}
+
+p{
+    text-align: center;
+    font-size: 8px;
+    color: darkgray
+}

@@ -1,0 +1,51 @@
+﻿@using NetworkWatcher.Models;
+
+<div class="panel panel-default border @Collapse">
+    <div class="panel-heading alert-info">
+        <p class="panel-title">Connections log</p>
+    </div>
+
+    <div class="panel-body">
+        <div class="container-fluid">
+            <div class="row">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Id</th>
+                            <th>Datetime</th>
+                            <th>DeviceID</th>
+                            <th>ConnectionID</th>
+                            <th>EventType</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (LogItem log in LogItems)
+                        {
+                            <tr>
+                                <td>@log.Id</td>
+                                <td>@log.DateTime</td>
+                                <td>@log.DeviceId</td>
+                                <td>@log.ConnectionId</td>
+                                <td>@log.EventType.Value</td>
+                                <td></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                    
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Collapse { get; set; } = "collapse"; // hide by default
+
+    [Parameter]
+    public List<LogItem> LogItems { get; set; }
+
+
+    
+}
